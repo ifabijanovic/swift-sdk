@@ -300,6 +300,8 @@ class KinveyTestCase: XCTestCase {
                 encrypted: encrypted
             )
         }
+        Kinvey.logLevel = .debug
+        Kinvey.sharedClient.logNetworkEnabled = true
     }
     
     func initializeProduction() {
@@ -311,7 +313,8 @@ class KinveyTestCase: XCTestCase {
                 encrypted: encrypted
             )
         }
-        
+        Kinvey.logLevel = .debug
+        Kinvey.sharedClient.logNetworkEnabled = true
     }
     
     private var originalLogLevel: LogLevel!

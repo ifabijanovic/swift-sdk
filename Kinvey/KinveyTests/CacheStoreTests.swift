@@ -20,6 +20,40 @@ class CacheStoreTests: StoreTestCase {
         store = DataStore<Person>.collection(.cache)
     }
     
+    var mockCount = 0
+    
+    override func tearDown() {
+        if let activeUser = client.activeUser {
+            let store = DataStore<Person>.collection(.network)
+            let query = Query(format: "\(Person.aclProperty() ?? PersistableAclKey).creator == %@", activeUser.userId)
+            
+            if useMockData {
+                mockResponse(json: ["count" : mockCount])
+            }
+            defer {
+                if useMockData {
+                    setURLProtocol(nil)
+                }
+                mockCount = 0
+            }
+            
+            weak var expectationRemoveAll = expectation(description: "Remove All")
+            
+            store.remove(query) { (count, error) -> Void in
+                XCTAssertNotNil(count)
+                XCTAssertNil(error)
+                
+                expectationRemoveAll?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { (error) -> Void in
+                expectationRemoveAll = nil
+            }
+        }
+        
+        super.tearDown()
+    }
+    
     func testSaveAddress() {
         let person = Person()
         person.name = "Victor Barros"
@@ -388,6 +422,915 @@ class CacheStoreTests: StoreTestCase {
             XCTAssertEqual(realm.objects(Acl.self).count, 1)
             XCTAssertEqual(realm.objects(StringValue.self).count, 1)
             XCTAssertEqual(realm.objects(BookEdition.self).count, 2)
+        }
+    }
+    
+    func testCacheStoreDisabledDeltaset() {
+        let store = DataStore<Person>.collection(.cache)
+        
+        var initialCount = Int64(0)
+        do {
+            if !useMockData {
+                initialCount = Int64(try! DataStore<Person>.collection(.network).count(options: nil).waitForResult(timeout: defaultTimeout).value())
+            }
+        }
+        
+        do {
+            if useMockData {
+                mockResponse { (request) -> HttpResponse in
+                    guard let url = request.url else {
+                        XCTAssertNotNil(request.url)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                    switch url.path {
+                    case "/appdata/_kid_/\(Person.collectionName())":
+                        let json = [
+                            [
+                                "_id": "58450d87f29e22207c83a236",
+                                "name": "Victor Barros",
+                                "_acl": [
+                                    "creator": "58450d87c077970e38a388ba"
+                                ],
+                                "_kmd": [
+                                    "lmt": Date().toString(),
+                                    "ect": Date().toString()
+                                ]
+                            ]
+                        ]
+                        return HttpResponse(
+                            headerFields: [
+                                "X-Kinvey-Request-Start" : Date().toString()
+                            ],
+                            json: json
+                        )
+                    default:
+                        XCTFail(url.path)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                }
+            } else {
+                var person = Person()
+                person.name = "Victor Barros"
+                person = try! DataStore<Person>.collection(.network).save(person, options: nil).waitForResult(timeout: defaultTimeout).value()
+            }
+            defer {
+                if useMockData {
+                    setURLProtocol(nil)
+                }
+            }
+            
+            weak var expectationPull = expectation(description: "Pull")
+            
+            store.pull() { results, error in
+                self.assertThread()
+                XCTAssertNotNil(results)
+                XCTAssertNil(error)
+                
+                if let results = results {
+                    XCTAssertEqual(Int64(results.count), initialCount + 1)
+                    
+                    if let person = results.first {
+                        XCTAssertEqual(person.name, "Victor Barros")
+                    }
+                    let cacheCount = self.store.cache?.count(query: nil)
+                    XCTAssertEqual(cacheCount, results.count)
+                }
+                
+                expectationPull?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { error in
+                expectationPull = nil
+            }
+        }
+        
+        do {
+            if useMockData {
+                mockResponse { (request) -> HttpResponse in
+                    guard let url = request.url else {
+                        XCTAssertNotNil(request.url)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                    switch url.path {
+                    case "/appdata/_kid_/\(Person.collectionName())":
+                        let json = [
+                            [
+                                "_id": "58450d87f29e22207c83a236",
+                                "name": "Victor Barros",
+                                "_acl": [
+                                    "creator": "58450d87c077970e38a388ba"
+                                ],
+                                "_kmd": [
+                                    "lmt": Date().toString(),
+                                    "ect": Date().toString(),
+                                ]
+                            ],
+                            [
+                                "_id": "58450d87f29e22207c83a237",
+                                "name": "Victor Hugo",
+                                "_acl": [
+                                    "creator": "58450d87c077970e38a388ba"
+                                ],
+                                "_kmd": [
+                                    "lmt": Date().toString(),
+                                    "ect": Date().toString()
+                                ]
+                            ]
+                        ]
+                        return HttpResponse(
+                            headerFields: [
+                                "X-Kinvey-Request-Start" : Date().toString()
+                            ],
+                            json: json
+                        )
+                    default:
+                        XCTFail(url.path)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                }
+            } else {
+                var person = Person()
+                person.name = "Victor Hugo"
+                person = try! DataStore<Person>.collection(.network).save(person, options: nil).waitForResult(timeout: defaultTimeout).value()
+            }
+            defer {
+                if useMockData {
+                    setURLProtocol(nil)
+                }
+            }
+            
+            weak var expectationPull = expectation(description: "Pull")
+            
+            store.pull() { results, error in
+                self.assertThread()
+                XCTAssertNotNil(results)
+                XCTAssertNil(error)
+                
+                if let results = results {
+                    XCTAssertEqual(Int64(results.count), initialCount + 2)
+                    
+                    if let person = results.first {
+                        XCTAssertEqual(person.name, "Victor Barros")
+                    }
+                    if let secondPerson = results.last {
+                        XCTAssertEqual(secondPerson.name, "Victor Hugo")
+                    }
+                    
+                    let cacheCount = self.store.cache?.count(query: nil)
+                    XCTAssertEqual(cacheCount, results.count)
+                }
+                
+                expectationPull?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { error in
+                expectationPull = nil
+            }
+        }
+    }
+    
+    func testCacheStoreDeltasetSinceIsRespected1ExtraItemAdded() {
+        let store = DataStore<Person>.collection(.cache, deltaSet: true)
+        
+        var initialCount = Int64(0)
+        do {
+            if !useMockData {
+                initialCount = Int64(try! DataStore<Person>.collection(.network).count(options: nil).waitForResult(timeout: defaultTimeout).value())
+            }
+        }
+        
+        do {
+            if useMockData {
+                mockResponse { (request) -> HttpResponse in
+                    guard let url = request.url else {
+                        XCTAssertNotNil(request.url)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                    switch url.path {
+                    case "/appdata/_kid_/\(Person.collectionName())":
+                        let json = [
+                            [
+                                "_id": "58450d87f29e22207c83a236",
+                                "name": "Victor Barros",
+                                "_acl": [
+                                    "creator": "58450d87c077970e38a388ba"
+                                ],
+                                "_kmd": [
+                                    "lmt": Date().toString(),
+                                    "ect": Date().toString()
+                                ]
+                            ]
+                        ]
+                        return HttpResponse(
+                            headerFields: [
+                                "X-Kinvey-Request-Start" : Date().toString()
+                            ],
+                            json: json
+                        )
+                    default:
+                        XCTFail(url.path)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                }
+            } else {
+                var person = Person()
+                person.name = "Victor Barros"
+                person = try! DataStore<Person>.collection(.network).save(person, options: nil).waitForResult(timeout: defaultTimeout).value()
+            }
+            defer {
+                if useMockData {
+                    setURLProtocol(nil)
+                }
+            }
+            
+            weak var expectationPull = expectation(description: "Pull")
+            
+            store.pull() { results, error in
+                self.assertThread()
+                XCTAssertNotNil(results)
+                XCTAssertNil(error)
+                
+                if let results = results {
+                    XCTAssertEqual(Int64(results.count), initialCount + 1)
+                    
+                    if let person = results.first {
+                        XCTAssertEqual(person.name, "Victor Barros")
+                    }
+                    let cacheCount = self.store.cache?.count(query: nil)
+                    XCTAssertEqual(cacheCount, results.count)
+                }
+                
+                expectationPull?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { error in
+                expectationPull = nil
+            }
+        }
+        
+        do {
+            if useMockData {
+                mockResponse { (request) -> HttpResponse in
+                    guard let url = request.url else {
+                        XCTAssertNotNil(request.url)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                    switch url.path {
+                    case "/appdata/_kid_/Person/_deltaset":
+                        return HttpResponse(
+                            headerFields: [
+                                "X-Kinvey-Request-Start" : Date().toString()
+                            ],
+                            json: [
+                                "changed" : [
+                                    [
+                                    "_id": "58450d87f29e22207c83a237",
+                                    "name": "Victor Hugo",
+                                    "_acl": [
+                                        "creator": "58450d87c077970e38a388ba"
+                                    ],
+                                    "_kmd": [
+                                        "lmt": Date().toString(),
+                                        "ect": Date().toString()
+                                    ]
+                                    ]
+                                ],
+                                "deleted" : []
+                            ]
+                        )
+                    default:
+                        XCTFail(url.path)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                }
+            } else {
+                var person = Person()
+                person.name = "Victor Hugo"
+                person = try! DataStore<Person>.collection(.network).save(person, options: nil).waitForResult(timeout: defaultTimeout).value()
+            }
+            defer {
+                if useMockData {
+                    setURLProtocol(nil)
+                }
+            }
+            weak var expectationPull = expectation(description: "Pull")
+            
+            store.pull() { results, error in
+                self.assertThread()
+                XCTAssertNotNil(results)
+                XCTAssertNil(error)
+                
+                if let results = results {
+                    XCTAssertEqual(Int64(results.count), initialCount + 2)
+                    
+                    if let person = results.first {
+                        XCTAssertEqual(person.name, "Victor Barros")
+                    }
+                    if let secondPerson = results.last {
+                        XCTAssertEqual(secondPerson.name, "Victor Hugo")
+                    }
+                    
+                    let cacheCount = self.store.cache?.count(query: nil)
+                    XCTAssertEqual(cacheCount, results.count)
+                }
+                
+                expectationPull?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { error in
+                expectationPull = nil
+            }
+            
+            weak var expectationPull2 = expectation(description: "Pull")
+            
+            store.pull() { results, error in
+                self.assertThread()
+                XCTAssertNotNil(results)
+                XCTAssertNil(error)
+                
+                if let results = results {
+                    XCTAssertEqual(Int64(results.count), initialCount + 2)
+                    
+                    if let person = results.first {
+                        XCTAssertEqual(person.name, "Victor Barros")
+                    }
+                    if let secondPerson = results.last {
+                        XCTAssertEqual(secondPerson.name, "Victor Hugo")
+                    }
+                    
+                    let cacheCount = self.store.cache?.count(query: nil)
+                    XCTAssertEqual(cacheCount, results.count)
+                }
+                
+                expectationPull2?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { error in
+                expectationPull2 = nil
+            }
+        }
+    }
+    
+    func testCacheStoreDeltasetSinceIsRespectedWithoutChanges() {
+        let store = DataStore<Person>.collection(.cache, deltaSet: true)
+        
+        var initialCount = Int64(0)
+        do {
+            if !useMockData {
+                initialCount = Int64(try! DataStore<Person>.collection(.network).count(options: nil).waitForResult(timeout: defaultTimeout).value())
+            }
+        }
+        
+        do {
+            if useMockData {
+                mockResponse { (request) -> HttpResponse in
+                    guard let url = request.url else {
+                        XCTAssertNotNil(request.url)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                    switch url.path {
+                    case "/appdata/_kid_/\(Person.collectionName())":
+                        let json = [
+                            [
+                                "_id": "58450d87f29e22207c83a236",
+                                "name": "Victor Barros",
+                                "_acl": [
+                                    "creator": "58450d87c077970e38a388ba"
+                                ],
+                                "_kmd": [
+                                    "lmt": "2016-12-05T06:47:35.711Z",
+                                    "ect": "2016-12-05T06:47:35.711Z"
+                                ]
+                            ]
+                        ]
+                        return HttpResponse(
+                            headerFields: [
+                                "X-Kinvey-Request-Start" : Date().toString()
+                            ],
+                            json: json
+                        )
+                    default:
+                        XCTFail(url.path)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                }
+            } else {
+                var person = Person()
+                person.name = "Victor Barros"
+                person = try! DataStore<Person>.collection(.network).save(person, options: nil).waitForResult(timeout: defaultTimeout).value()
+            }
+            defer {
+                if useMockData {
+                    setURLProtocol(nil)
+                }
+            }
+            
+            weak var expectationPull = expectation(description: "Pull")
+            
+            store.pull() { results, error in
+                self.assertThread()
+                XCTAssertNotNil(results)
+                XCTAssertNil(error)
+                
+                if let results = results {
+                    XCTAssertEqual(Int64(results.count), initialCount + 1)
+                    
+                    if let person = results.first {
+                        XCTAssertEqual(person.name, "Victor Barros")
+                    }
+                    let cacheCount = self.store.cache?.count(query: nil)
+                    XCTAssertEqual(cacheCount, results.count)
+                }
+                
+                expectationPull?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { error in
+                expectationPull = nil
+            }
+        }
+        
+        do {
+            if useMockData {
+                mockResponse { (request) -> HttpResponse in
+                    guard let url = request.url else {
+                        XCTAssertNotNil(request.url)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                    switch url.path {
+                    case "/appdata/_kid_/Person/_deltaset":
+                        return HttpResponse(
+                            headerFields: [
+                                "X-Kinvey-Request-Start" : Date().toString()
+                            ],
+                            json: [
+                                "changed" : [],
+                                "deleted" : []
+                            ]
+                        )
+                    default:
+                        XCTFail(url.path)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                }
+            }
+            weak var expectationPull = expectation(description: "Pull")
+            
+            store.pull() { results, error in
+                self.assertThread()
+                XCTAssertNotNil(results)
+                XCTAssertNil(error)
+                
+                if let results = results {
+                    XCTAssertEqual(Int64(results.count), initialCount + 1)
+                    
+                    if let person = results.first {
+                        XCTAssertEqual(person.name, "Victor Barros")
+                    }
+                    let cacheCount = self.store.cache?.count(query: nil)
+                    XCTAssertEqual(cacheCount, results.count)
+                }
+                
+                expectationPull?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { error in
+                expectationPull = nil
+            }
+        }
+    }
+    
+    func testCacheStoreDeltasetSinceIsRespected1ItemAdded1Updated1Deleted() {
+        let store = DataStore<Person>.collection(.cache, deltaSet: true)
+        var idToUpdate = ""
+        var idToDelete = ""
+        
+        
+        var initialCount = Int64(0)
+        do {
+            if !useMockData {
+                initialCount = Int64(try! DataStore<Person>.collection(.network).count(options: nil).waitForResult(timeout: defaultTimeout).value())
+            }
+        }
+        
+        do {
+            if useMockData {
+                mockResponse { (request) -> HttpResponse in
+                    guard let url = request.url else {
+                        XCTAssertNotNil(request.url)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                    switch url.path {
+                    case "/appdata/_kid_/\(Person.collectionName())":
+                        let json = [
+                            [
+                                "_id": "58450d87f29e22207c83a236",
+                                "name": "Victor Barros",
+                                "_acl": [
+                                    "creator": "58450d87c077970e38a388ba"
+                                ],
+                                "_kmd": [
+                                    "lmt": Date().toString(),
+                                    "ect": Date().toString()
+                                ]
+                            ],
+                            [
+                                "_id": "58450d87f29e22207c83a237",
+                                "name": "Victor Hugo",
+                                "_acl": [
+                                    "creator": "58450d87c077970e38a388ba"
+                                ],
+                                "_kmd": [
+                                    "lmt": Date().toString(),
+                                    "ect": Date().toString()
+                                ]
+                            ]
+                        ]
+                        return HttpResponse(
+                            headerFields: [
+                                "X-Kinvey-Request-Start" : Date().toString()
+                            ],
+                            json: json
+                        )
+                    default:
+                        XCTFail(url.path)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                }
+            } else {
+                var person = Person()
+                person.name = "Victor Barros"
+                person = try! DataStore<Person>.collection(.network).save(person, options: nil).waitForResult(timeout: defaultTimeout).value()
+                var secondPerson = Person()
+                secondPerson.name = "Victor Hugo"
+                secondPerson = try! DataStore<Person>.collection(.network).save(secondPerson, options: nil).waitForResult(timeout: defaultTimeout).value()
+                idToUpdate = person.personId!
+                idToDelete = secondPerson.personId!
+            }
+            defer {
+                if useMockData {
+                    setURLProtocol(nil)
+                }
+            }
+            
+            weak var expectationPull = expectation(description: "Pull")
+            
+            store.pull() { results, error in
+                self.assertThread()
+                XCTAssertNotNil(results)
+                XCTAssertNil(error)
+                
+                if let results = results {
+                    XCTAssertEqual(Int64(results.count), initialCount + 2)
+                    
+                    if let person = results.first {
+                        XCTAssertEqual(person.name, "Victor Barros")
+                    }
+                    if let secondPerson = results.last {
+                        XCTAssertEqual(secondPerson.name, "Victor Hugo")
+                    }
+                    
+                    let cacheCount = self.store.cache?.count(query: nil)
+                    XCTAssertEqual(cacheCount, results.count)
+                }
+                
+                expectationPull?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { error in
+                expectationPull = nil
+            }
+        }
+        
+        do {
+            if useMockData {
+                mockResponse { (request) -> HttpResponse in
+                    guard let url = request.url else {
+                        XCTAssertNotNil(request.url)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                    switch url.path {
+                    case "/appdata/_kid_/Person/_deltaset":
+                        return HttpResponse(
+                            headerFields: [
+                                "X-Kinvey-Request-Start" : Date().toString()
+                            ],
+                            json: [
+                                "changed" : [
+                                    [
+                                        "_id": "58450d87f29e22207c83a236",
+                                        "name": "Victor C Barros",
+                                        "_acl": [
+                                            "creator": "58450d87c077970e38a388ba"
+                                        ],
+                                        "_kmd": [
+                                            "lmt": Date().toString(),
+                                            "ect": Date().toString()
+                                        ]
+                                    ],
+                                    [
+                                        "_id": "58450d87f29e22207c83a238",
+                                        "name": "Victor Emmanuel",
+                                        "_acl": [
+                                            "creator": "58450d87c077970e38a388ba"
+                                        ],
+                                        "_kmd": [
+                                            "lmt": Date().toString(),
+                                            "ect": Date().toString()
+                                        ]
+                                    ]
+                                ],
+                                "deleted" : ["58450d87f29e22207c83a237"]
+                            ]
+                        )
+                    default:
+                        XCTFail(url.path)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                }
+            } else {
+                var updatedPerson = Person()
+                updatedPerson.name = "Victor C Barros"
+                updatedPerson.personId = idToUpdate
+                updatedPerson = try! DataStore<Person>.collection(.network).save(updatedPerson, options: nil).waitForResult(timeout: defaultTimeout).value()
+                var thirdPerson = Person()
+                thirdPerson.name = "Victor Emmanuel"
+                thirdPerson = try! DataStore<Person>.collection(.network).save(thirdPerson, options: nil).waitForResult(timeout: defaultTimeout).value()
+                try! DataStore<Person>.collection(.network).remove(byId: idToDelete).waitForResult(timeout: defaultTimeout).value()
+            }
+            defer {
+                if useMockData {
+                    setURLProtocol(nil)
+                }
+            }
+            weak var expectationPull = expectation(description: "Pull")
+            
+            store.pull() { results, error in
+                self.assertThread()
+                XCTAssertNotNil(results)
+                XCTAssertNil(error)
+                
+                if let results = results {
+                    XCTAssertEqual(Int64(results.count), initialCount + 2)
+                    
+                    if let person = results.first {
+                        XCTAssertEqual(person.name, "Victor C Barros")
+                    }
+                    if let secondPerson = results.last {
+                        XCTAssertEqual(secondPerson.name, "Victor Emmanuel")
+                    }
+                    
+                    let cacheCount = self.store.cache?.count(query: nil)
+                    XCTAssertEqual(cacheCount, results.count)
+                }
+                
+                expectationPull?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { error in
+                expectationPull = nil
+            }
+        }
+    }
+    
+    func testCacheStoreDeltasetSinceIsRespected1ItemDeletedInQuery() {
+        let store = DataStore<Person>.collection(.cache, deltaSet: true)
+        var idToDelete = ""
+        var idToUpdate = ""
+        
+        
+        var initialCount = Int64(0)
+        do {
+            if !useMockData {
+                initialCount = Int64(try! DataStore<Person>.collection(.network).count(options: nil).waitForResult(timeout: defaultTimeout).value())
+            }
+        }
+        
+        do {
+            if useMockData {
+                mockResponse { (request) -> HttpResponse in
+                    guard let url = request.url else {
+                        XCTAssertNotNil(request.url)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                    switch url.path {
+                    case "/appdata/_kid_/\(Person.collectionName())/?query={age:23}":
+                        let json = [
+                            [
+                                "_id": "58450d87f29e22207c83a236",
+                                "name": "Victor Barros",
+                                "age":23,
+                                "_acl": [
+                                    "creator": "58450d87c077970e38a388ba"
+                                ],
+                                "_kmd": [
+                                    "lmt": Date().toString(),
+                                    "ect": Date().toString()
+                                ]
+                            ],
+                            [
+                                "_id": "58450d87f29e22207c83a237",
+                                "name": "Victor Hugo",
+                                "age":24,
+                                "_acl": [
+                                    "creator": "58450d87c077970e38a388ba"
+                                ],
+                                "_kmd": [
+                                    "lmt": Date().toString(),
+                                    "ect": Date().toString()
+                                ]
+                            ],
+                            [
+                                "_id": "58450d87f29e22207c83a238",
+                                "name": "Victor Emmanuel",
+                                "age":23,
+                                "_acl": [
+                                    "creator": "58450d87c077970e38a388ba"
+                                ],
+                                "_kmd": [
+                                    "lmt": Date().toString(),
+                                    "ect": Date().toString()
+                                ]
+                            ]
+                        ]
+                        return HttpResponse(
+                            headerFields: [
+                                "X-Kinvey-Request-Start" : Date().toString()
+                            ],
+                            json: json
+                        )
+                    default:
+                        XCTFail(url.path)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                }
+            } else {
+                var person = Person()
+                person.name = "Victor Barros"
+                person.age = 23
+                person = try! DataStore<Person>.collection(.network).save(person, options: nil).waitForResult(timeout: defaultTimeout).value()
+                var secondPerson = Person()
+                secondPerson.name = "Victor Hugo"
+                secondPerson.age = 24
+                secondPerson = try! DataStore<Person>.collection(.network).save(secondPerson, options: nil).waitForResult(timeout: defaultTimeout).value()
+                var thirdPerson = Person()
+                thirdPerson.name = "Victor Emmanuel"
+                thirdPerson.age = 23
+                thirdPerson = try! DataStore<Person>.collection(.network).save(thirdPerson, options: nil).waitForResult(timeout: defaultTimeout).value()
+                idToDelete = thirdPerson.personId!
+            }
+            defer {
+                if useMockData {
+                    setURLProtocol(nil)
+                }
+            }
+            
+            weak var expectationPull = expectation(description: "Pull")
+            
+            store.pull() { results, error in
+                self.assertThread()
+                XCTAssertNotNil(results)
+                XCTAssertNil(error)
+                
+                if let results = results {
+                    XCTAssertEqual(Int64(results.count), initialCount + 2)
+                    
+                    if let person = results.first {
+                        XCTAssertEqual(person.name, "Victor Barros")
+                    }
+                    
+                    if let thirdPerson = results.last {
+                        XCTAssertEqual(thirdPerson.name, "Victor Hugo")
+                    }
+                    
+                    let cacheCount = self.store.cache?.count(query: nil)
+                    XCTAssertEqual(cacheCount, results.count)
+                }
+                
+                expectationPull?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { error in
+                expectationPull = nil
+            }
+        }
+        
+        do {
+            if useMockData {
+                mockResponse { (request) -> HttpResponse in
+                    guard let url = request.url else {
+                        XCTAssertNotNil(request.url)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                    switch url.path {
+                    case "/appdata/_kid_/Person/_deltaset":
+                        return HttpResponse(
+                            headerFields: [
+                                "X-Kinvey-Request-Start" : Date().toString()
+                            ],
+                            json: [
+                                "changed" : [
+                                    [
+                                        "_id": "58450d87f29e22207c83a236",
+                                        "name": "Victor C Barros",
+                                        "_acl": [
+                                            "creator": "58450d87c077970e38a388ba"
+                                        ],
+                                        "_kmd": [
+                                            "lmt": Date().toString(),
+                                            "ect": Date().toString()
+                                        ]
+                                    ],
+                                    [
+                                        "_id": "58450d87f29e22207c83a238",
+                                        "name": "Victor Emmanuel",
+                                        "_acl": [
+                                            "creator": "58450d87c077970e38a388ba"
+                                        ],
+                                        "_kmd": [
+                                            "lmt": Date().toString(),
+                                            "ect": Date().toString()
+                                        ]
+                                    ]
+                                ],
+                                "deleted" : ["58450d87f29e22207c83a237"]
+                            ]
+                        )
+                    default:
+                        XCTFail(url.path)
+                        return HttpResponse(statusCode: 404, data: Data())
+                    }
+                }
+            } else {
+                var updatedPerson = Person()
+                updatedPerson.name = "Victor C Barros"
+                updatedPerson.personId = idToUpdate
+                updatedPerson = try! DataStore<Person>.collection(.network).save(updatedPerson, options: nil).waitForResult(timeout: defaultTimeout).value()
+                var thirdPerson = Person()
+                thirdPerson.name = "Victor Emmanuel"
+                thirdPerson = try! DataStore<Person>.collection(.network).save(thirdPerson, options: nil).waitForResult(timeout: defaultTimeout).value()
+                try! DataStore<Person>.collection(.network).remove(byId: idToDelete).waitForResult(timeout: defaultTimeout).value()
+            }
+            defer {
+                if useMockData {
+                    setURLProtocol(nil)
+                }
+            }
+            weak var expectationPull = expectation(description: "Pull")
+            
+            store.pull() { results, error in
+                self.assertThread()
+                XCTAssertNotNil(results)
+                XCTAssertNil(error)
+                
+                if let results = results {
+                    XCTAssertEqual(Int64(results.count), initialCount + 2)
+                    
+                    if let person = results.first {
+                        XCTAssertEqual(person.name, "Victor C Barros")
+                    }
+                    if let secondPerson = results.last {
+                        XCTAssertEqual(secondPerson.name, "Victor Emmanuel")
+                    }
+                    
+                    let cacheCount = self.store.cache?.count(query: nil)
+                    XCTAssertEqual(cacheCount, results.count)
+                }
+                
+                expectationPull?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { error in
+                expectationPull = nil
+            }
+            
+            weak var expectationPull2 = expectation(description: "Pull")
+            
+            store.pull() { results, error in
+                self.assertThread()
+                XCTAssertNotNil(results)
+                XCTAssertNil(error)
+                
+                if let results = results {
+                    XCTAssertEqual(Int64(results.count), initialCount + 2)
+                    
+                    if let person = results.first {
+                        XCTAssertEqual(person.name, "Victor C Barros")
+                    }
+                    if let secondPerson = results.last {
+                        XCTAssertEqual(secondPerson.name, "Victor Emmanuel")
+                    }
+                    
+                    let cacheCount = self.store.cache?.count(query: nil)
+                    XCTAssertEqual(cacheCount, results.count)
+                }
+                
+                expectationPull2?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { error in
+                expectationPull2 = nil
+            }
         }
     }
     

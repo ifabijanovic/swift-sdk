@@ -1501,6 +1501,7 @@ class DeltaSetCacheTestCase: KinveyTestCase {
         signUp()
         
         let store = DataStore<Person>.collection(.sync, deltaSet: true)
+        var idToUpdate=""
         
         let person = Person()
         person.name = "Victor"
@@ -1604,6 +1605,7 @@ class DeltaSetCacheTestCase: KinveyTestCase {
                     
                     if let person = results.first {
                         XCTAssertEqual(person.name, "Victor")
+                        idToUpdate = person.personId!
                     }
                 }
                 
@@ -1612,6 +1614,52 @@ class DeltaSetCacheTestCase: KinveyTestCase {
             
             waitForExpectations(timeout: defaultTimeout) { (error) in
                 expectationFind = nil
+            }
+        }
+        
+        person.name = "Victor Hugo"
+        person.personId = idToUpdate
+        
+        weak var expectationUpdate = expectation(description: "Update")
+        
+        store.save(person) { (person, error) in
+            XCTAssertTrue(Thread.isMainThread)
+            XCTAssertNotNil(person)
+            XCTAssertNil(error)
+            
+            expectationUpdate?.fulfill()
+        }
+        
+        waitForExpectations(timeout: defaultTimeout) { (error) in
+            expectationUpdate = nil
+        }
+        
+        do {
+            if useMockData {
+                mockResponse(statusCode: 200, json: [
+                    "_id" : idToUpdate,
+                    "name" : "Victor",
+                    "age" : 0
+                    ])
+            }
+            defer {
+                if useMockData {
+                    setURLProtocol(nil)
+                }
+            }
+            
+            weak var expectationPush = expectation(description: "Push")
+            
+            store.push() { (count, error) in
+                XCTAssertTrue(Thread.isMainThread)
+                XCTAssertNotNil(count)
+                XCTAssertNil(error)
+                
+                expectationPush?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { (error) in
+                expectationPush = nil
             }
         }
         
@@ -1675,6 +1723,7 @@ class DeltaSetCacheTestCase: KinveyTestCase {
     
     func testFindOneRecordDeltaSetNoKmd() {
         signUp()
+        var idToUpdate=""
         
         let store = DataStore<Person>.collection(.sync, deltaSet: true)
         
@@ -1769,6 +1818,7 @@ class DeltaSetCacheTestCase: KinveyTestCase {
                     
                     if let person = results.first {
                         XCTAssertEqual(person.name, "Victor")
+                        idToUpdate = person.personId!
                     }
                 }
                 
@@ -1779,6 +1829,54 @@ class DeltaSetCacheTestCase: KinveyTestCase {
                 expectationFind = nil
             }
         }
+        
+        weak var expectationUpdate = expectation(description: "Update")
+        
+        
+        person.personId = idToUpdate
+        person.name = "Victor Hugo"
+        store.save(person) { (person, error) in
+            XCTAssertTrue(Thread.isMainThread)
+            XCTAssertNotNil(person)
+            XCTAssertNil(error)
+            
+            expectationUpdate?.fulfill()
+        }
+        
+        waitForExpectations(timeout: defaultTimeout) { (error) in
+            expectationUpdate = nil
+        }
+        
+        do {
+            if useMockData {
+                mockResponse(statusCode: 200, json: [
+                    "_id" : idToUpdate,
+                    "name" : "Victor",
+                    "age" : 0
+                    ])
+            }
+            defer {
+                if useMockData {
+                    setURLProtocol(nil)
+                }
+            }
+            
+            weak var expectationPush = expectation(description: "Push")
+            
+            store.push() { (count, error) in
+                XCTAssertTrue(Thread.isMainThread)
+                XCTAssertNotNil(count)
+                XCTAssertNil(error)
+                
+                expectationPush?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { (error) in
+                expectationPush = nil
+            }
+        }
+        
+        
         
         do {
             var mockCount = 0
@@ -1904,20 +2002,22 @@ class DeltaSetCacheTestCase: KinveyTestCase {
         }
         
         do {
-            mockResponse(statusCode: 201, json: [
-                "_id" : UUID().uuidString,
-                "name" : "Victor",
-                "age" : 0,
-                "_acl" : [
-                    "creator" : client.activeUser?.userId
-                ],
-                "_kmd" : [
-                    "lmt" : Date().toString(),
-                    "ect" : Date().toString()
-                ]
-            ])
-            defer {
-                setURLProtocol(nil)
+            if useMockData{
+                mockResponse(statusCode: 201, json: [
+                    "_id" : UUID().uuidString,
+                    "name" : "Victor",
+                    "age" : 0,
+                    "_acl" : [
+                        "creator" : client.activeUser?.userId
+                    ],
+                    "_kmd" : [
+                        "lmt" : Date().toString(),
+                        "ect" : Date().toString()
+                    ]
+                ])
+                defer {
+                    setURLProtocol(nil)
+                }
             }
             
             weak var expectationPush = expectation(description: "Push")
@@ -1953,10 +2053,49 @@ class DeltaSetCacheTestCase: KinveyTestCase {
             ])
         }
         
+        
         do {
-            mockResponse(headerFields: ["X-Kinvey-Request-Start" : Date().toString()], json: jsonArray)
-            defer {
-                setURLProtocol(nil)
+            for _ in 1...200 {
+                weak var expectationSave = expectation(description: "Save")
+                let person = Person()
+                person.name = UUID().uuidString
+                store.save(person) { (person, error) in
+                    XCTAssertTrue(Thread.isMainThread)
+                    XCTAssertNotNil(person)
+                    XCTAssertNil(error)
+                    
+                    expectationSave?.fulfill()
+                }
+                
+                waitForExpectations(timeout: defaultTimeout) { (error) in
+                    expectationSave = nil
+                }
+            }
+            weak var expectationPush = expectation(description: "Push")
+            
+            store.push() { (count, error) in
+                XCTAssertTrue(Thread.isMainThread)
+                XCTAssertNotNil(count)
+                XCTAssertNil(error)
+                
+                expectationPush?.fulfill()
+            }
+            
+            waitForExpectations(timeout: defaultTimeout) { (error) in
+                expectationPush = nil
+            }
+            
+        }
+        
+        
+        do {
+            if useMockData{
+                mockResponse(headerFields: ["X-Kinvey-Request-Start" : Date().toString()], json: jsonArray)
+                defer {
+                    setURLProtocol(nil)
+                }
+                
+                
             }
             
             weak var expectationFind = expectation(description: "Find")
@@ -1976,19 +2115,21 @@ class DeltaSetCacheTestCase: KinveyTestCase {
         }
         
         do {
-            mockResponse { response in
-                let urlComponents = URLComponents(url: response.url!, resolvingAgainstBaseURL: false)!
-                XCTAssertEqual(urlComponents.path.components(separatedBy: "/").last, "_deltaset")
-                return HttpResponse(
-                    headerFields: ["X-Kinvey-Request-Start" : Date().toString()],
-                    json: [
-                        "changed" : [],
-                        "deleted" : []
-                    ]
-                )
-            }
-            defer {
-                setURLProtocol(nil)
+            if useMockData{
+                mockResponse { response in
+                    let urlComponents = URLComponents(url: response.url!, resolvingAgainstBaseURL: false)!
+                    XCTAssertEqual(urlComponents.path.components(separatedBy: "/").last, "_deltaset")
+                    return HttpResponse(
+                        headerFields: ["X-Kinvey-Request-Start" : Date().toString()],
+                        json: [
+                            "changed" : [],
+                            "deleted" : []
+                        ]
+                    )
+                }
+                defer {
+                    setURLProtocol(nil)
+                }
             }
             
             weak var expectationFind = expectation(description: "Find")
