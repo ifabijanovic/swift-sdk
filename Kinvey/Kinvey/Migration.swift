@@ -7,8 +7,11 @@
 //
 
 import Foundation
+
+#if canImport(RealmSwift)
 import Realm
 import RealmSwift
+#endif
 
 public typealias Schema = (version: CUnsignedLongLong, migrationHandler: Migration.MigrationHandler?)
 
@@ -18,13 +21,16 @@ open class Migration: NSObject {
     public typealias MigrationHandler = (Migration, UInt64) -> Void
     public typealias MigrationObjectHandler = (JsonDictionary) -> JsonDictionary?
     
+#if canImport(RealmSwift)
     let realmMigration: RealmSwift.Migration
     
     init(realmMigration: RealmSwift.Migration) {
         self.realmMigration = realmMigration
     }
+#endif
     
     internal class func performMigration(persistenceId: String, encryptionKey: Data? = nil, schemaVersion: CUnsignedLongLong = 0, migrationHandler: Migration.MigrationHandler? = nil) {
+        #if canImport(RealmSwift)
         var realmBaseConfiguration = Realm.Configuration()
         if let encryptionKey = encryptionKey {
             realmBaseConfiguration.encryptionKey = encryptionKey
@@ -53,10 +59,12 @@ open class Migration: NSObject {
                 }
             }
         }
+        #endif
     }
     
     /// Method that performs a migration in a specific collection.
     open func execute<T: Entity>(_ type: T.Type, oldClassName: String? = nil, migrationObjectHandler: MigrationObjectHandler? = nil) {
+        #if canImport(RealmSwift)
         let className = type.className()
         let oldSchemaClassName = oldClassName ?? className
         let oldObjectSchema = realmMigration.oldSchema[oldSchemaClassName]
@@ -77,6 +85,7 @@ open class Migration: NSObject {
                 }
             }
         }
+        #endif
     }
     
 }

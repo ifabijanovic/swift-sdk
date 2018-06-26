@@ -8,6 +8,10 @@
 
 import Foundation
 
+#if canImport(MongoDBPredicateAdaptor)
+import MongoDBPredicateAdaptor
+#endif
+
 class HttpRequestFactory: RequestFactory {
     
     let client: Client

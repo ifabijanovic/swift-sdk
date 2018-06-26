@@ -8,7 +8,10 @@
 
 import CoreLocation
 import ObjectMapper
+
+#if canImport(RealmSwift)
 import RealmSwift
+#endif
 
 @available(*, deprecated: 3.18.0, message: "Please use Swift.Codable instead")
 public typealias Map = ObjectMapper.Map
@@ -349,7 +352,7 @@ class GeoPointTransform: TransformOf<GeoPoint, [CLLocationDegrees]> {
 }
 
 @available(*, deprecated: 3.18.0, message: "Please use Swift.Codable instead")
-class ListValueTransform<T: RealmSwift.Object>: TransformOf<List<T>, [JsonDictionary]> where T: BaseMappable {
+class ListValueTransform<T: Object>: TransformOf<List<T>, [JsonDictionary]> where T: BaseMappable {
     
     init(_ list: List<T>) {
         super.init(fromJSON: { (array) -> List<T>? in

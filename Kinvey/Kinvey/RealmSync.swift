@@ -6,6 +6,8 @@
 //  Copyright © 2016 Kinvey. All rights reserved.
 //
 
+#if canImport(RealmSwift)
+
 import Foundation
 import RealmSwift
 
@@ -97,3 +99,5 @@ class RealmSync<T: Persistable>: SyncType where T: NSObject {
     }
     
 }
+
+#endif

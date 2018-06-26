@@ -20,10 +20,13 @@ internal class SyncManager: NSObject {
         self.schemaVersion = schemaVersion
     }
     
-    func sync<T: Persistable>(fileURL: URL? = nil, type: T.Type) throws -> AnySync where T: NSObject {
+    func sync<T: Persistable>(fileURL: URL? = nil, type: T.Type) throws -> AnySync? where T: NSObject {
+        #if canImport(RealmSwift)
         let realmSync = try RealmSync<T>(persistenceId: persistenceId, fileURL: fileURL, encryptionKey: encryptionKey, schemaVersion: schemaVersion)
-        let anySync = AnySync(realmSync)
-        return anySync
+        return AnySync(realmSync)
+        #else
+        return nil
+        #endif
     }
     
 }

@@ -7,8 +7,10 @@
 //
 
 import Foundation
+#if canImport(RealmSwift)
 import RealmSwift
 import Realm
+#endif
 
 /// Class that represents a file in the backend holding all metadata of the file, but don't hold the data itself.
 open class File: Object {
@@ -22,7 +24,7 @@ open class File: Object {
     open dynamic var fileName: String?
     
     /// `size` property of the file.
-    open let size = RealmOptional<Int64>()
+    open let size = KinveyOptional<Int64>()
     
     /// `mimeType` property of the file.
     @objc
@@ -160,6 +162,7 @@ open class File: Object {
         uploadHeaders <- ("uploadHeaders", map[FileCodingKeys.uploadHeaders])
     }
     
+    #if canImport(RealmSwift)
     open override class func primaryKey() -> String? {
         return "fileId"
     }
@@ -175,6 +178,7 @@ open class File: Object {
         ]
         return props
     }
+    #endif
     
 }
 

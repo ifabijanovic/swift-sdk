@@ -76,6 +76,7 @@ class AclTestCase: StoreTestCase {
         }
     }
     
+    #if !SWIFT_PACKAGE
     func testNoPermissionToDeletePush() {
         signUp()
         
@@ -192,6 +193,7 @@ class AclTestCase: StoreTestCase {
             }
         }
     }
+    #endif
     
     func testGlobalRead() {
         signUp()

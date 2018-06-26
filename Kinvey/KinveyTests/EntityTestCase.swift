@@ -12,11 +12,13 @@ import Nimble
 
 class EntityTestCase: XCTestCase {
     
+    #if !SWIFT_PACKAGE
     func testCollectionName() {
         expect {
             try Entity.collectionName()
         }.to(throwError())
     }
+    #endif
     
     func testBoolValue() {
         let value = true

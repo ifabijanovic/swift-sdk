@@ -1115,6 +1115,8 @@ open class User: NSObject, Credential {
         return AnyRequest(request)
     }
     
+    #if canImport(PubNub)
+    
     /// Register the user to start performing realtime / live calls
     @discardableResult
     open func registerForRealtime(
@@ -1150,6 +1152,8 @@ open class User: NSObject, Credential {
         }
         return AnyRequest(request)
     }
+    
+    #endif
     
     /// Unregister the user to stop performing realtime / live calls
     @discardableResult

@@ -7,11 +7,76 @@
 //
 
 import Foundation
+import ObjectMapper
+
+#if canImport(RealmSwift)
 import Realm
 import RealmSwift
 
 public typealias List<T: RealmSwift.Object> = RealmSwift.List<T>
 public typealias Object = RealmSwift.Object
+#else
+open class List<T> : Sequence {
+    
+    private var array = Array<T>()
+    
+    public typealias Element = T
+    public typealias Iterator = Array<T>.Iterator
+    
+    public init() {
+    }
+    
+    open func append(_ value: T) {
+        array.append(value)
+    }
+    
+    open var count: Int {
+        return array.count
+    }
+    
+    open var first: T? {
+        return array.first
+    }
+    
+    open var last: T? {
+        return array.last
+    }
+    
+    open func removeAll() {
+        array.removeAll()
+    }
+    
+    open func append(objectsIn list: List<T>) {
+        array.append(contentsOf: list.array)
+    }
+    
+    open func map<R>(_ block: ((T) throws -> R)) rethrows -> [R] {
+        return try array.map(block)
+    }
+    
+    public func makeIterator() -> IndexingIterator<Array<T>> {
+        return array.makeIterator()
+    }
+    
+}
+
+open class Object: NSObject {
+    
+    public required override init() {
+        super.init()
+    }
+    
+    public subscript(key: String) -> Any? {
+        get {
+            return value(forKey: key)
+        }
+        set {
+            setValue(newValue, forKey: key)
+        }
+    }
+    
+}
+#endif
 
 internal func StringFromClass(cls: AnyClass) -> String {
     var className = NSStringFromClass(cls)
@@ -78,14 +143,17 @@ open class Entity: Object, Persistable {
     @objc
     public dynamic var acl: Acl?
     
+    #if canImport(RealmSwift)
     internal var realmConfiguration: Realm.Configuration?
     internal var reference: ThreadSafeReference<Entity>?
+    #endif
     
     /// Default Constructor.
     public required init() {
         super.init()
     }
-
+    
+    #if canImport(Realm)
     /**
      WARNING: This is an internal initializer not intended for public use.
      :nodoc:
@@ -101,6 +169,7 @@ open class Entity: Object, Persistable {
     public required init(value: Any, schema: RLMSchema) {
         super.init(value: value, schema: schema)
     }
+    #endif
     
     public required init(from decoder: Decoder) throws {
         super.init()
@@ -118,6 +187,7 @@ open class Entity: Object, Persistable {
         try container.encodeIfPresent(acl, forKey: .acl)
     }
     
+    #if canImport(RealmSwift)
     /**
      WARNING: This is an internal initializer not intended for public use.
      :nodoc:
@@ -152,6 +222,7 @@ open class Entity: Object, Persistable {
         }
         return properties
     }
+    #endif
     
     /// Override this method to tell how to map your own objects.
     @available(*, deprecated: 3.18.0, message: "Please use Swift.Codable instead")

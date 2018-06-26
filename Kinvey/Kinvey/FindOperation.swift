@@ -113,7 +113,11 @@ internal class FindOperation<T: Persistable>: ReadOperation<T, AnyRandomAccessCo
                             resolver.reject(error)
                         }
                     }
-                    multiRequest.progress.addChild(request.progress, withPendingUnitCount: 1)
+                    if #available(OSX 10.11, *) {
+                        multiRequest.progress.addChild(request.progress, withPendingUnitCount: 1)
+                    } else {
+                        fatalError("macOS 10.11+ is required")
+                    }
                     multiRequest += request
                 }
             } else {
@@ -126,7 +130,12 @@ internal class FindOperation<T: Persistable>: ReadOperation<T, AnyRandomAccessCo
         return Promise<AnyRandomAccessCollection<T>> { resolver in
             let maxSizePerResultSet = options?.maxSizePerResultSet ?? MaxSizePerResultSet
             let nPages = Int64(ceil(Double(count) / Double(maxSizePerResultSet)))
-            let progress = Progress(totalUnitCount: nPages + 1, parent: multiRequest.progress, pendingUnitCount: 99)
+            let progress: Progress
+            if #available(OSX 10.11, *) {
+                progress = Progress(totalUnitCount: nPages + 1, parent: multiRequest.progress, pendingUnitCount: 99)
+            } else {
+                fatalError("macOS 10.11+ is required")
+            }
             var offsetIterator = stride(from: 0, to: count, by: maxSizePerResultSet).makeIterator()
             let isCacheNotNil = cache != nil
             var mustSaveQueryLastSync = self.mustSaveQueryLastSync ?? true
@@ -160,7 +169,11 @@ internal class FindOperation<T: Persistable>: ReadOperation<T, AnyRandomAccessCo
                             resolver.reject(error)
                         }
                     }
-                    progress.addChild(request.progress, withPendingUnitCount: 1)
+                    if #available(OSX 10.11, *) {
+                        progress.addChild(request.progress, withPendingUnitCount: 1)
+                    } else {
+                        fatalError("macOS 10.11+ is required")
+                    }
                     multiRequest += request
                 }
             }
@@ -271,7 +284,11 @@ internal class FindOperation<T: Persistable>: ReadOperation<T, AnyRandomAccessCo
                     }
                 }
             }
-            multiRequest.progress.addChild(request.progress, withPendingUnitCount: 99)
+            if #available(OSX 10.11, *) {
+                multiRequest.progress.addChild(request.progress, withPendingUnitCount: 99)
+            } else {
+                fatalError("macOS 10.11+ is required")
+            }
             multiRequest += request
         }.recover { (error) -> Promise<AnyRandomAccessCollection<T>> in
             if let cache = self.cache,
@@ -345,7 +362,11 @@ internal class FindOperation<T: Persistable>: ReadOperation<T, AnyRandomAccessCo
                     resolver.reject(buildError(data, response, error, self.client))
                 }
             }
-            multiRequest.progress.addChild(request.progress, withPendingUnitCount: 99)
+            if #available(OSX 10.11, *) {
+                multiRequest.progress.addChild(request.progress, withPendingUnitCount: 99)
+            } else {
+                fatalError("macOS 10.11+ is required")
+            }
             multiRequest += request
         }
     }
@@ -371,7 +392,11 @@ internal class FindOperation<T: Persistable>: ReadOperation<T, AnyRandomAccessCo
                         resolver.reject(error)
                     }
                 }
-                multiRequest.progress.addChild(request.progress, withPendingUnitCount: 1)
+                if #available(OSX 10.11, *) {
+                    multiRequest.progress.addChild(request.progress, withPendingUnitCount: 1)
+                } else {
+                    fatalError("macOS 10.11+ is required")
+                }
                 multiRequest += request
             }.then {
                 return self.fetchAutoPagination(multiRequest: multiRequest, count: $0)

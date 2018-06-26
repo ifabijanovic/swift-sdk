@@ -112,7 +112,11 @@ class TaskProgressRequest: NSObject {
                         task.countOfBytesExpectedToReceive != NSURLSessionTransferSizeUnknown,
                         task.countOfBytesExpectedToReceive > 0
                     {
-                        _progressDownload = Progress(totalUnitCount: task.countOfBytesExpectedToReceive, parent: _progress, pendingUnitCount: 1)
+                        if #available(OSX 10.11, *) {
+                            _progressDownload = Progress(totalUnitCount: task.countOfBytesExpectedToReceive, parent: _progress, pendingUnitCount: 1)
+                        } else {
+                            fatalError("macOS 10.11+ is required")
+                        }
                     }
                     if let progress = _progressDownload,
                         task.countOfBytesReceived > 0,
@@ -125,7 +129,11 @@ class TaskProgressRequest: NSObject {
                         task.countOfBytesExpectedToSend != NSURLSessionTransferSizeUnknown,
                         task.countOfBytesExpectedToSend > 0
                     {
-                        _progressUpload = Progress(totalUnitCount: task.countOfBytesExpectedToSend, parent: _progress, pendingUnitCount: 1)
+                        if #available(OSX 10.11, *) {
+                            _progressUpload = Progress(totalUnitCount: task.countOfBytesExpectedToSend, parent: _progress, pendingUnitCount: 1)
+                        } else {
+                            fatalError("macOS 10.11+ is required")
+                        }
                     }
                     if let progress = _progressUpload,
                         task.countOfBytesSent > 0,

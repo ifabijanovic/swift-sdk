@@ -7,8 +7,8 @@
 //
 
 import XCTest
-import KIF
 import Kinvey
+import KIF
 
 class PushMissingConfigurationTestCase: KinveyTestCase {
     

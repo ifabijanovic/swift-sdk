@@ -225,6 +225,7 @@ class ClientTestCase: KinveyTestCase {
         XCTAssertNil(EnvironmentInfo(JSON: [:]))
     }
     
+    #if !SWIFT_PACKAGE
     func testClientAppKeyAndAppSecretEmpty() {
         weak var expectationClient = self.expectation(description: "Client")
         
@@ -258,6 +259,7 @@ class ClientTestCase: KinveyTestCase {
             try DataStore<Person>.collection(options: try! Options(client: client))
         }.to(throwError())
     }
+    #endif
     
     func testDefaultMICVersion() {
         XCTAssertEqual(Client().micApiVersion, .v3)

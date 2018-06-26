@@ -86,6 +86,7 @@ class ForgotToCallSuperPersistable: Persistable {
 
 class ForgotToCallSuper: XCTestCase {
     
+    #if !SWIFT_PACKAGE
     func testForgotToCallSuper() {
         expect {
             try ForgotToCallSuperEntity.propertyMappingReverse()
@@ -103,5 +104,6 @@ class ForgotToCallSuper: XCTestCase {
             try ForgotToCallSuperPersistable.propertyMappingReverse()
         }.to(throwError())
     }
+    #endif
     
 }

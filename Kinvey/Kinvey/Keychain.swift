@@ -7,14 +7,63 @@
 //
 
 import Foundation
+
+#if canImport(KeychainAccess)
 import KeychainAccess
+#else
+class MemoryKeychain {
+    
+    var attributes = [String : Any]()
+    
+    init(_ service: String = UUID().uuidString) {
+        
+    }
+    
+    func removeAll() throws {
+        
+    }
+    
+    subscript(_ key: String) -> Any? {
+        get {
+            return attributes[key]
+        }
+        set {
+            attributes[key] = newValue
+        }
+    }
+    
+    subscript(_ key: String) -> String? {
+        get {
+            return attributes[key] as? String
+        }
+        set {
+            attributes[key] = newValue
+        }
+    }
+    
+    subscript(data key: String) -> Data? {
+        get {
+            return attributes[key] as? Data
+        }
+        set {
+            self[key] = newValue
+        }
+    }
+    
+}
+#endif
 
 class Keychain {
     
     private let appKey: String?
     private let accessGroup: String?
     private let _client: Client?
+    
+    #if canImport(KeychainAccess)
     internal let keychain: KeychainAccess.Keychain
+    #else
+    internal let keychain: MemoryKeychain
+    #endif
     
     private var client: Client {
         return _client ?? sharedClient
@@ -24,21 +73,34 @@ class Keychain {
         self.appKey = nil
         self.accessGroup = nil
         self._client = nil
+        #if canImport(KeychainAccess)
         self.keychain = KeychainAccess.Keychain().accessibility(.afterFirstUnlockThisDeviceOnly)
+        #else
+        self.keychain = MemoryKeychain()
+        #endif
     }
     
     init(appKey: String, client: Client) {
         self.appKey = appKey
         self.accessGroup = nil
         self._client = client
-        self.keychain = KeychainAccess.Keychain(service: "com.kinvey.Kinvey.\(appKey)").accessibility(.afterFirstUnlockThisDeviceOnly)
+        let service = "com.kinvey.Kinvey.\(appKey)"
+        #if canImport(KeychainAccess)
+        self.keychain = KeychainAccess.Keychain(service: service).accessibility(.afterFirstUnlockThisDeviceOnly)
+        #else
+        self.keychain = MemoryKeychain(service)
+        #endif
     }
     
     init(accessGroup: String, client: Client) {
         self.accessGroup = accessGroup
         self.appKey = nil
         self._client = client
+        #if canImport(KeychainAccess)
         self.keychain = KeychainAccess.Keychain(service: accessGroup, accessGroup: accessGroup).accessibility(.afterFirstUnlockThisDeviceOnly)
+        #else
+        self.keychain = MemoryKeychain(accessGroup)
+        #endif
     }
     
     enum Key: String {
@@ -137,6 +199,7 @@ class Keychain {
     
 }
 
+#if canImport(KeychainAccess)
 extension KeychainAccess.Keychain {
     
     subscript(key: Keychain.Key) -> String? {
@@ -158,3 +221,26 @@ extension KeychainAccess.Keychain {
     }
     
 }
+#else
+extension MemoryKeychain {
+    
+        subscript(_ key: Keychain.Key) -> String? {
+            get {
+                return self[key.rawValue]
+            }
+            set {
+                self[key.rawValue] = newValue
+            }
+        }
+    
+        subscript(data key: Keychain.Key) -> Data? {
+            get {
+                return self[data: key.rawValue]
+            }
+            set {
+                self[data: key.rawValue] = newValue
+            }
+        }
+    
+}
+#endif

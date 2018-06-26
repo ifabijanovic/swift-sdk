@@ -40,8 +40,10 @@ class DirectoryEntry: Entity {
         email <- map["email"]
     }
     
+    #if canImport(RealmSwift)
     override class func ignoredProperties() -> [String] {
         return ["refProject"]
     }
+    #endif
     
 }

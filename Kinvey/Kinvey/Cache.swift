@@ -240,7 +240,7 @@ class AnyCache<T: Persistable>: CacheType {
     func invalidateLastSync(query: Query) -> Date? {
         return _invalidateLastSync(query)
     }
-    
+
     func observe(_ query: Query?, completionHandler: @escaping (CollectionChange<AnyRandomAccessCollection<T>>) -> Void) -> AnyNotificationToken {
         return _observe(query, completionHandler)
     }
@@ -260,5 +260,15 @@ class AnyCache<T: Persistable>: CacheType {
     func cancelWrite() {
         _cancelWrite()
     }
+    
+}
+
+public enum CollectionChange<CollectionType> {
+    
+    case initial(CollectionType)
+    
+    case update(CollectionType, deletions: [Int], insertions: [Int], modifications: [Int])
+    
+    case error(Swift.Error)
     
 }

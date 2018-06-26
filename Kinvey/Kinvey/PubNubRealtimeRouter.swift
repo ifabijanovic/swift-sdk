@@ -6,6 +6,8 @@
 //  Copyright © 2017 Kinvey. All rights reserved.
 //
 
+#if canImport(PubNub)
+
 import PubNub
 import PromiseKit
 
@@ -161,3 +163,5 @@ extension PubNubRealtimeRouter: PNObjectEventListener {
     }
     
 }
+
+#endif

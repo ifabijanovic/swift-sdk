@@ -134,6 +134,7 @@ class FileTestCase: StoreTestCase {
         super.tearDown()
     }
     
+    #if !SWIFT_PACKAGE
     func testDownloadMissingFileId() {
         signUp()
         
@@ -159,6 +160,7 @@ class FileTestCase: StoreTestCase {
             expectationDownload = nil
         }
     }
+    #endif
     
     func testDownloadTimeoutError() {
         signUp()
@@ -2436,6 +2438,7 @@ class FileTestCase: StoreTestCase {
         }
     }
     
+    #if canImport(RealmSwift)
     func testGetInstance() {
         let appKey = "file-get_instance-\(UUID().uuidString)"
         let client = Client(appKey: appKey, appSecret: "unit-test")
@@ -2452,6 +2455,7 @@ class FileTestCase: StoreTestCase {
             }
         }
     }
+    #endif
     
     func testAclJson() {
         let file = File {

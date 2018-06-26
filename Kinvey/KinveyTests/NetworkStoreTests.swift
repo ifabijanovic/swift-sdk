@@ -1264,6 +1264,7 @@ class NetworkStoreTests: StoreTestCase {
         }
     }
     
+    #if !SWIFT_PACKAGE
     func testFindMethodObjectIdMissing() {
         mockResponse(json: [
             [
@@ -1301,6 +1302,7 @@ class NetworkStoreTests: StoreTestCase {
             expectationFind = nil
         }
     }
+    #endif
     
     func testFindMethodObjectIdMissingAndRandomSampleValidationStrategy() {
         mockResponse(json: [

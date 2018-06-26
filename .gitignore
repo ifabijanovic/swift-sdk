@@ -2,7 +2,6 @@
 KinveyKit/build
 KinveyKit/doc
 KinveyKit/LICENSES.html
-.DS_Store
 devtools
 DocTemplates
 KinveyKit/Documents
@@ -10,10 +9,15 @@ Tools/upload-to-amazon-aws-s3/node_modules
 Tools/kinvey-dump/node_modules
 Pods
 docs
-.build
 /build
 Kinvey/build
 Carthage
 !Carthage/Checkouts/NSPredicate-MongoDB-Adaptor/Sources/MongoDBPredicateAdaptor/*.swift
 Kinvey.framework.zip
 scripts/RealtimeSend/Rome
+
+# Swift Package Manager
+/Kinvey.xcodeproj
+.DS_Store
+/.build
+/Packages

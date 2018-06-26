@@ -6,6 +6,8 @@
 //  Copyright © 2016 Kinvey. All rights reserved.
 //
 
+#if canImport(RealmSwift)
+
 import Foundation
 import RealmSwift
 
@@ -82,3 +84,5 @@ class RealmFileCache<T: File>: FileCache {
     }
     
 }
+
+#endif

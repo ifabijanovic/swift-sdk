@@ -9,9 +9,24 @@
 import Foundation
 import CoreData
 import CoreLocation
+
+import ObjectMapper
+
+#if canImport(RealmSwift)
 import RealmSwift
 
 public typealias KinveyOptional = RealmSwift.RealmOptional
+#else
+public class KinveyOptional<T> {
+    
+    public var value: T?
+    
+    public init(value: T? = nil) {
+        self.value = value
+    }
+    
+}
+#endif
 
 infix operator <- : DefaultPrecedence
 
@@ -28,6 +43,7 @@ public protocol Persistable: JSONCodable {
 
 extension Persistable where Self: Entity {
     
+    #if canImport(RealmSwift)
     public func observe(_ block: @escaping (ObjectChange<Self>) -> Void) -> AnyNotificationToken? {
         let completionHandler = { (objectChange: RealmSwift.ObjectChange) in
             switch objectChange {
@@ -52,6 +68,7 @@ extension Persistable where Self: Entity {
         let realm = try! Realm(configuration: realmConfiguration)
         return AnyNotificationToken(realm.resolve(reference)!.observe(completionHandler))
     }
+    #endif
     
 }
 

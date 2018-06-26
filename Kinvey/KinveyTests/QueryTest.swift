@@ -347,6 +347,7 @@ class QueryTest: XCTestCase {
         XCTAssertEqual(result, expected)
     }
     
+    #if canImport(RealmSwift)
     func testArrayContains() {
         let cache = try! RealmCache<Book>(persistenceId: "_kid_", schemaVersion: 0)
         let predicate = cache.translate(predicate: NSPredicate(format: "authorNames contains %@", "Victor"))
@@ -382,6 +383,7 @@ class QueryTest: XCTestCase {
         let predicate = cache.translate(predicate: NSPredicate(format: "subquery(authorNames, $authorNames, $authorNames like[c] %@).$count > 0", "Vic*"))
         XCTAssertEqual(predicate, NSPredicate(format: "subquery(authorNames, $authorNames, $authorNames.value like[c] %@).$count > 0", "Vic*"))
     }
+    #endif
     
     func testAscending() {
         let query = Query()

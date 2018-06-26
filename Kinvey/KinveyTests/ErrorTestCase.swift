@@ -11,6 +11,7 @@ import XCTest
 
 class ErrorTestCase: KinveyTestCase {
     
+    #if !SWIFT_PACKAGE
     func testObjectIDMissing() {
         let expectedDescription = "Object ID is required and is missing"
         XCTAssertEqual("\(Kinvey.Error.objectIdMissing)", expectedDescription)
@@ -27,11 +28,13 @@ class ErrorTestCase: KinveyTestCase {
     func testInvalidResponse() {
         XCTAssertEqual(Kinvey.Error.invalidResponse(httpResponse: nil, data: nil).description, "Invalid response from the server")
     }
+    #endif
     
     func testUnauthorized() {
         XCTAssertEqual(Kinvey.Error.unauthorized(httpResponse: nil, data: nil, error: "Error", debug: "Debug", description: "Description").description, "Description")
     }
     
+    #if !SWIFT_PACKAGE
     func testNoActiveUser() {
         XCTAssertEqual(Kinvey.Error.noActiveUser.description, "An active user is required and none was found")
     }
@@ -47,6 +50,7 @@ class ErrorTestCase: KinveyTestCase {
     func testUserWithoutEmailOrUsername() {
         XCTAssertEqual(Kinvey.Error.userWithoutEmailOrUsername.description, "User has no email or username")
     }
+    #endif
     
     func testInvalidResponseHttpResponseData() {
         let response = "Unauthorized"

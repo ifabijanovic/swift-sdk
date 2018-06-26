@@ -434,8 +434,7 @@ class CacheStoreTests: StoreTestCase {
         }
         
         do {
-            let basePath = Kinvey.cacheBasePath
-            var url = URL(fileURLWithPath: basePath)
+            var url = Kinvey.cacheBasePath
             url = url.appendingPathComponent(sharedClient.appKey!)
             url = url.appendingPathComponent("kinvey.realm")
             let realm = try! Realm(fileURL: url)

@@ -369,7 +369,11 @@ open class FileStore<FileType: File> {
                 }
             }
             if let requests = requests {
-                requests.progress.addChild(request.progress, withPendingUnitCount: 1)
+                if #available(OSX 10.11, *) {
+                    requests.progress.addChild(request.progress, withPendingUnitCount: 1)
+                } else {
+                    fatalError("macOS 10.11+ is required")
+                }
                 requests += request
             }
         }
@@ -617,7 +621,11 @@ open class FileStore<FileType: File> {
                     }
                 }
                 let urlSessionTaskRequest = URLSessionTaskRequest<ResultType>(client: client, options: options, task: dataTask)
-                requests.progress.addChild(urlSessionTaskRequest.progress, withPendingUnitCount: 1)
+                if #available(OSX 10.11, *) {
+                    requests.progress.addChild(urlSessionTaskRequest.progress, withPendingUnitCount: 1)
+                } else {
+                    fatalError("macOS 10.11+ is required")
+                }
                 requests += urlSessionTaskRequest
                 dataTask.resume()
             } else {
@@ -686,7 +694,11 @@ open class FileStore<FileType: File> {
                     handler(data, response, error)
                 }
                 let urlSessionTaskRequest = URLSessionTaskRequest<ResultType>(client: self.client, options: options, task: uploadTask)
-                requests.progress.addChild(urlSessionTaskRequest.progress, withPendingUnitCount: 98)
+                if #available(OSX 10.11, *) {
+                    requests.progress.addChild(urlSessionTaskRequest.progress, withPendingUnitCount: 98)
+                } else {
+                    fatalError("macOS 10.11+ is required")
+                }
                 requests += urlSessionTaskRequest
                 uploadTask.resume()
             case let .url(url):
@@ -700,7 +712,11 @@ open class FileStore<FileType: File> {
                     handler(data, response, error)
                 }
                 let urlSessionTaskRequest = URLSessionTaskRequest<ResultType>(client: self.client, options: options, task: uploadTask)
-                requests.progress.addChild(urlSessionTaskRequest.progress, withPendingUnitCount: 98)
+                if #available(OSX 10.11, *) {
+                    requests.progress.addChild(urlSessionTaskRequest.progress, withPendingUnitCount: 98)
+                } else {
+                    fatalError("macOS 10.11+ is required")
+                }
                 requests += urlSessionTaskRequest
                 uploadTask.resume()
             case let .stream(stream):
@@ -716,7 +732,11 @@ open class FileStore<FileType: File> {
                     handler(data, response, error)
                 }
                 let urlSessionTaskRequest = URLSessionTaskRequest<ResultType>(client: self.client, options: options, task: dataTask)
-                requests.progress.addChild(urlSessionTaskRequest.progress, withPendingUnitCount: 98)
+                if #available(OSX 10.11, *) {
+                    requests.progress.addChild(urlSessionTaskRequest.progress, withPendingUnitCount: 98)
+                } else {
+                    fatalError("macOS 10.11+ is required")
+                }
                 requests += urlSessionTaskRequest
                 dataTask.resume()
             }
@@ -851,10 +871,8 @@ open class FileStore<FileType: File> {
                             let fileManager = FileManager()
                             if let entityId = entityId
                             {
-                                let baseFolder = cacheBasePath
                                 do {
-                                    var baseFolderURL = URL(fileURLWithPath: baseFolder)
-                                    baseFolderURL = baseFolderURL.appendingPathComponent(self.client.appKey!).appendingPathComponent("files")
+                                    let baseFolderURL = cacheBasePath.appendingPathComponent(self.client.appKey!).appendingPathComponent("files")
                                     if !fileManager.fileExists(atPath: baseFolderURL.path) {
                                         try fileManager.createDirectory(at: baseFolderURL, withIntermediateDirectories: true, attributes: nil)
                                     }
@@ -1151,7 +1169,11 @@ open class FileStore<FileType: File> {
                     downloadURL: downloadURL,
                     options: options
                 )
-                multiRequest.progress.addChild(request.progress, withPendingUnitCount: 99)
+                if #available(OSX 10.11, *) {
+                    multiRequest.progress.addChild(request.progress, withPendingUnitCount: 99)
+                } else {
+                    fatalError("macOS 10.11+ is required")
+                }
                 multiRequest += request
                 return promise
             case .data(let data):

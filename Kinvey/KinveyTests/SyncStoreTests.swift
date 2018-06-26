@@ -346,49 +346,51 @@ class SyncStoreTests: StoreTestCase {
         
     }
     
+    func removeFile(fileManager: FileManager = FileManager.default, _ url: URL) throws {
+        if fileManager.fileExists(atPath: url.path) {
+            try fileManager.removeItem(at: url)
+        }
+    }
+    
+    func removeFolder(fileManager: FileManager = FileManager.default, _ url: URL) throws {
+        var isDirectory: ObjCBool = false
+        if fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory) {
+            if isDirectory.boolValue {
+                for file in try fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: nil) {
+                    try removeFolder(fileManager: fileManager, file)
+                }
+            }
+            try fileManager.removeItem(at: url)
+        }
+    }
     
     func testCustomTag() {
         let fileManager = FileManager.default
         
-        let path = cacheBasePath
         let tag = "Custom Identifier"
-        let customPath = "\(path)/\(client.appKey!)/\(tag).realm"
+        let customPath = cacheBasePath.appendingPathComponent("\(client.appKey!)/\(tag).realm")
         
         let removeFiles: () -> Void = {
-            if fileManager.fileExists(atPath: customPath) {
-                try! fileManager.removeItem(atPath: customPath)
+            if fileManager.fileExists(atPath: customPath.path) {
+                try! fileManager.removeItem(at: customPath)
             }
             
-            let lockPath = (customPath as NSString).appendingPathExtension("lock")!
-            if fileManager.fileExists(atPath: lockPath) {
-                try! fileManager.removeItem(atPath: lockPath)
-            }
-            
-            let logPath = (customPath as NSString).appendingPathExtension("log")!
-            if fileManager.fileExists(atPath: logPath) {
-                try! fileManager.removeItem(atPath: logPath)
-            }
-            
-            let logAPath = (customPath as NSString).appendingPathExtension("log_a")!
-            if fileManager.fileExists(atPath: logAPath) {
-                try! fileManager.removeItem(atPath: logAPath)
-            }
-            
-            let logBPath = (customPath as NSString).appendingPathExtension("log_b")!
-            if fileManager.fileExists(atPath: logBPath) {
-                try! fileManager.removeItem(atPath: logBPath)
-            }
+            try! self.removeFile(customPath.appendingPathExtension("lock"))
+            try! self.removeFile(customPath.appendingPathExtension("log"))
+            try! self.removeFile(customPath.appendingPathExtension("log_a"))
+            try! self.removeFile(customPath.appendingPathExtension("log_b"))
+            try! self.removeFolder(customPath.appendingPathExtension("management"))
         }
         
         removeFiles()
-        XCTAssertFalse(fileManager.fileExists(atPath: customPath))
+        XCTAssertFalse(fileManager.fileExists(atPath: customPath.path))
         
         store = try! DataStore<Person>.collection(.sync, tag: tag)
         defer {
             removeFiles()
-            XCTAssertFalse(fileManager.fileExists(atPath: customPath))
+            XCTAssertFalse(fileManager.fileExists(atPath: customPath.path))
         }
-        XCTAssertTrue(fileManager.fileExists(atPath: customPath))
+        XCTAssertTrue(fileManager.fileExists(atPath: customPath.path))
     }
     
     func testPurge() {
@@ -1893,7 +1895,7 @@ class SyncStoreTests: StoreTestCase {
         }
         
         let reportMemory4 = reportMemory()!
-        XCTAssertLessThan(reportMemory4 - reportMemory3, 1024 * 1024 * 50) // 50 Mb
+        XCTAssertLessThan(reportMemory4 - reportMemory3, 1024 * 1024 * 150) // 50 Mb
     }
     
     func testExpiredTTL() {

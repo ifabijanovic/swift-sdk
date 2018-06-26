@@ -6,6 +6,7 @@
 //  Copyright © 2016 Kinvey. All rights reserved.
 //
 
+import Foundation
 import Kinvey
 
 class Book: Entity {
@@ -33,6 +34,8 @@ class Book: Entity {
         super.propertyMapping(map)
         
         title <- ("title", map["title"])
+        
+        #if canImport(RealmSwift)
         authorNames <- ("authorNames", map["author_names"])
         
         editions <- ("editions", map["editions"])
@@ -42,6 +45,7 @@ class Book: Entity {
         editionsRetailPrice <- ("editionsRetailPrice", map["editions_retail_price"])
         editionsRating <- ("editionsRating", map["editions_rating"])
         editionsAvailable <- ("editionsAvailable", map["editions_available"])
+        #endif
     }
     
 }

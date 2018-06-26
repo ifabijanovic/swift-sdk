@@ -7,8 +7,11 @@
 //
 
 import Foundation
+
+#if canImport(RealmSwift)
 import Realm
 import RealmSwift
+#endif
 
 internal class CacheManager: NSObject {
     
@@ -33,29 +36,37 @@ internal class CacheManager: NSObject {
             }
         }
         
+#if canImport(RealmSwift)
         return AnyCache(try RealmCache<T>(persistenceId: persistenceId, fileURL: fileURL, encryptionKey: encryptionKey, schemaVersion: schemaVersion))
+#else
+        return nil
+#endif
     }
     
     func fileCache<FileType: File>(fileURL: URL? = nil) -> AnyFileCache<FileType>? {
+#if canImport(RealmSwift)
         return AnyFileCache(RealmFileCache<FileType>(persistenceId: persistenceId, fileURL: fileURL, encryptionKey: encryptionKey, schemaVersion: schemaVersion))
+#else
+        return nil
+#endif
     }
     
     func clearAll(_ tag: String? = nil) {
-        let path = cacheBasePath
-        let basePath = (path as NSString).appendingPathComponent(persistenceId)
+#if canImport(RealmSwift)
+        let basePath = cacheBasePath.appendingPathComponent(persistenceId)
         
         let fileManager = FileManager.default
         
         var isDirectory = ObjCBool(false)
-        let exists = fileManager.fileExists(atPath: basePath, isDirectory: &isDirectory)
+        let exists = fileManager.fileExists(atPath: basePath.path, isDirectory: &isDirectory)
         if exists && isDirectory.boolValue {
-            var array = try! fileManager.subpathsOfDirectory(atPath: basePath)
+            var array = try! fileManager.subpathsOfDirectory(atPath: basePath.path)
             array = array.filter({ (path) -> Bool in
                 return path.hasSuffix(".realm") && (tag == nil || path.caseInsensitiveCompare(tag! + ".realm") == .orderedSame)
             })
             for realmFile in array {
                 var realmConfiguration = Realm.Configuration.defaultConfiguration
-                realmConfiguration.fileURL = URL(fileURLWithPath: (basePath as NSString).appendingPathComponent(realmFile))
+                realmConfiguration.fileURL = basePath.appendingPathComponent(realmFile)
                 if let encryptionKey = encryptionKey {
                     realmConfiguration.encryptionKey = encryptionKey
                 }
@@ -66,6 +77,7 @@ internal class CacheManager: NSObject {
                 }
             }
         }
+#endif
     }
     
 }

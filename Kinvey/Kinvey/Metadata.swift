@@ -7,8 +7,10 @@
 //
 
 import Foundation
+
+#if canImport(Realm)
 import Realm
-import RealmSwift
+#endif
 
 /// This class represents the metadata information for a record
 public class Metadata: Object, Codable {
@@ -95,6 +97,7 @@ public class Metadata: Object, Codable {
         try container.encodeIfPresent(authtoken, forKey: .authtoken)
     }
     
+    #if canImport(RealmSwift)
     /**
      WARNING: This is an internal initializer not intended for public use.
      :nodoc:
@@ -102,7 +105,9 @@ public class Metadata: Object, Codable {
     open override class func ignoredProperties() -> [String] {
         return ["lastModifiedTime", "entityCreationTime", "lastReadTime"]
     }
+    #endif
     
+    #if canImport(Realm)
     // MARK: Realm
     
     /**
@@ -120,7 +125,8 @@ public class Metadata: Object, Codable {
     public required init(value: Any, schema: RLMSchema) {
         super.init(value: value, schema: schema)
     }
-    
+    #endif
+
     /// Constructor that validates if the map can be build a new instance of Metadata.
     @available(*, deprecated: 3.18.0, message: "Please use Swift.Codable instead")
     public required convenience init?(map: Map) {
@@ -222,6 +228,7 @@ public final class UserMetadata: Metadata {
         try super.encode(to: encoder)
     }
     
+    #if canImport(Realm)
     public required init(realm: RLMRealm, schema: RLMObjectSchema) {
         super.init(realm: realm, schema: schema)
     }
@@ -229,6 +236,7 @@ public final class UserMetadata: Metadata {
     public required init(value: Any, schema: RLMSchema) {
         super.init(value: value, schema: schema)
     }
+    #endif
     
     @available(*, deprecated: 3.18.0, message: "Please use Swift.Codable instead")
     public override func mapping(map: Map) {

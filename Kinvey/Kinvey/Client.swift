@@ -424,8 +424,7 @@ open class Client: Credential {
     }
     
     internal class func fileURL(appKey: String, tag: String = defaultTag) -> URL {
-        let path = cacheBasePath as NSString
-        var filePath = URL(fileURLWithPath: path.appendingPathComponent(appKey))
+        var filePath = cacheBasePath.appendingPathComponent(appKey)
         filePath.appendPathComponent("\(tag).realm")
         return filePath
     }

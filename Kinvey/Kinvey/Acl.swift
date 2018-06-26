@@ -7,8 +7,6 @@
 //
 
 import Foundation
-import Realm
-import RealmSwift
 
 /// This class represents the ACL (Access Control List) for a record.
 public final class Acl: Object, BuilderType {
@@ -18,10 +16,10 @@ public final class Acl: Object, BuilderType {
     open dynamic var creator: String?
     
     /// The `userId` of the `User` used to create the record.
-    open let globalRead = RealmOptional<Bool>()
+    open let globalRead = KinveyOptional<Bool>()
     
     /// The `userId` of the `User` used to create the record.
-    open let globalWrite = RealmOptional<Bool>()
+    open let globalWrite = KinveyOptional<Bool>()
     
     @objc
     fileprivate dynamic var readersValue: String?
@@ -79,6 +77,7 @@ public final class Acl: Object, BuilderType {
         self.writers = writers
     }
     
+    #if canImport(RealmSwift)
     /**
      WARNING: This is an internal initializer not intended for public use.
      :nodoc:
@@ -86,6 +85,7 @@ public final class Acl: Object, BuilderType {
     open override class func ignoredProperties() -> [String] {
         return ["readers", "writers"]
     }
+    #endif
 
 }
 

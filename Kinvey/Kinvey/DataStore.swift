@@ -1269,9 +1269,11 @@ open class DataStore<T: Persistable> where T: NSObject {
         return AnyRequest(request)
     }
     
+#if canImport(RealmSwift)
     public func observe(_ query: Query? = nil, completionHandler: @escaping (CollectionChange<AnyRandomAccessCollection<T>>) -> Void) -> AnyNotificationToken? {
         return cache?.observe(query, completionHandler: completionHandler)
     }
+#endif
 
 }
 

@@ -1,0 +1,52 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Nimble",
+        "repositoryURL": "https://github.com/Quick/Nimble.git",
+        "state": {
+          "branch": null,
+          "revision": "8023e3980d91b470ad073d6da843b73f2eeb1844",
+          "version": "7.1.2"
+        }
+      },
+      {
+        "package": "MongoDBPredicateAdaptor",
+        "repositoryURL": "https://github.com/tjboneman/NSPredicate-MongoDB-Adaptor.git",
+        "state": {
+          "branch": "master",
+          "revision": "058e591d798281416d3eaae68a36c6ccd776e90b",
+          "version": null
+        }
+      },
+      {
+        "package": "ObjectMapper",
+        "repositoryURL": "https://github.com/heyzooi/ObjectMapper.git",
+        "state": {
+          "branch": "master",
+          "revision": "5a5471a3092cac6de6d98b96fdfd02b6156baa2a",
+          "version": null
+        }
+      },
+      {
+        "package": "PromiseKit",
+        "repositoryURL": "https://github.com/mxcl/PromiseKit.git",
+        "state": {
+          "branch": null,
+          "revision": "264ba1f22e05339b6376587a9533f436ca65dc97",
+          "version": "6.3.3"
+        }
+      },
+      {
+        "package": "XCGLogger",
+        "repositoryURL": "https://github.com/DaveWoodCom/XCGLogger.git",
+        "state": {
+          "branch": "master",
+          "revision": "64dce71f6b8657df1aa7ab94cf748dad744b69af",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}

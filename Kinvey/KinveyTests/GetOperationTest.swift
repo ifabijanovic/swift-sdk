@@ -7,6 +7,7 @@
 //
 
 import XCTest
+@testable import Kinvey
 
 class GetOperationTest: StoreTestCase {
     
@@ -18,9 +19,9 @@ class GetOperationTest: StoreTestCase {
     override func save() -> Person {
         let person = self.person
         
-        weak var expectationSave = expectationWithDescription("Save")
+        weak var expectationSave = expectation(description: "Save")
         
-        store.save(person, writePolicy: .ForceNetwork) { (person, error) -> Void in
+        store.save(person, options: Options(writePolicy: .forceNetwork)) { (person, error) -> Void in
             XCTAssertNotNil(person)
             XCTAssertNil(error)
             
@@ -32,7 +33,7 @@ class GetOperationTest: StoreTestCase {
             expectationSave?.fulfill()
         }
         
-        waitForExpectationsWithTimeout(defaultTimeout) { error in
+        waitForExpectations(timeout: defaultTimeout) { error in
             expectationSave = nil
         }
         
@@ -44,16 +45,16 @@ class GetOperationTest: StoreTestCase {
         
         XCTAssertNotNil(person.personId)
         if let personId = person.personId {
-            weak var expectationGet = expectationWithDescription("Get")
+            weak var expectationGet = expectation(description: "Get")
             
-            store.findById(personId, readPolicy: .ForceNetwork) { (person, error) -> Void in
+            store.find(personId, readPolicy: .ForceNetwork) { (person, error) -> Void in
                 XCTAssertNotNil(person)
                 XCTAssertNil(error)
                 
                 expectationGet?.fulfill()
             }
             
-            waitForExpectationsWithTimeout(defaultTimeout) { error in
+            waitForExpectations(timeout: defaultTimeout) { error in
                 expectationGet = nil
             }
         }
@@ -64,16 +65,16 @@ class GetOperationTest: StoreTestCase {
         
         XCTAssertNotNil(person.personId)
         if let personId = person.personId {
-            weak var expectationGet = expectationWithDescription("Get")
+            weak var expectationGet = expectation(description: "Get")
             
-            store.findById(personId, readPolicy: .ForceLocal) { (person, error) -> Void in
+            store.find(personId, readPolicy: .forceLocal) { (person, error) -> Void in
                 XCTAssertNotNil(person)
                 XCTAssertNil(error)
                 
                 expectationGet?.fulfill()
             }
             
-            waitForExpectationsWithTimeout(defaultTimeout) { error in
+            waitForExpectations(timeout: defaultTimeout) { error in
                 expectationGet = nil
             }
         }
@@ -88,7 +89,7 @@ class GetOperationTest: StoreTestCase {
         
         XCTAssertNotNil(person.personId)
         if let personId = person.personId {
-            weak var expectationGet = expectationWithDescription("Get")
+            weak var expectationGet = expectation(description: "Get")
             
             store.findById(personId, readPolicy: .ForceLocal) { (person, error) -> Void in
                 XCTAssertNil(person)
@@ -97,15 +98,15 @@ class GetOperationTest: StoreTestCase {
                 expectationGet?.fulfill()
             }
             
-            waitForExpectationsWithTimeout(defaultTimeout) { error in
+            waitForExpectations(timeout: defaultTimeout) { error in
                 expectationGet = nil
             }
         }
     }
     
     func testBoth() {
-        weak var expectationSaveLocal = expectationWithDescription("SaveLocal")
-        weak var expectationSaveNetwork = expectationWithDescription("SaveNetwork")
+        weak var expectationSaveLocal = expectation(description: "SaveLocal")
+        weak var expectationSaveNetwork = expectation(description: "SaveNetwork")
         
         var isLocal = true
         
@@ -126,19 +127,19 @@ class GetOperationTest: StoreTestCase {
             }
         }
         
-        waitForExpectationsWithTimeout(defaultTimeout) { error in
+        waitForExpectations(timeout: defaultTimeout) { error in
             expectationSaveLocal = nil
             expectationSaveNetwork = nil
         }
         
         XCTAssertNotNil(person.personId)
         if let personId = person.personId {
-            weak var expectationGetLocal = expectationWithDescription("GetLocal")
-            weak var expectationGetNetwork = expectationWithDescription("GetNetwork")
+            weak var expectationGetLocal = expectation(description: "GetLocal")
+            weak var expectationGetNetwork = expectation(description: "GetNetwork")
             
             var isLocal = true
             
-            store.findById(personId, readPolicy: .Both) { (person, error) -> Void in
+            store.find(personId, readPolicy: .Both) { (person, error) -> Void in
                 XCTAssertNotNil(person)
                 XCTAssertNil(error)
                 
@@ -150,7 +151,7 @@ class GetOperationTest: StoreTestCase {
                 }
             }
             
-            waitForExpectationsWithTimeout(defaultTimeout) { error in
+            waitForExpectations(timeout: defaultTimeout) { error in
                 expectationGetLocal = nil
                 expectationGetNetwork = nil
             }

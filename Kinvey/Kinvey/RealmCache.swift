@@ -6,6 +6,8 @@
 //  Copyright © 2016 Kinvey. All rights reserved.
 //
 
+#if canImport(RealmSwift)
+
 import Foundation
 import Realm
 import RealmSwift
@@ -36,16 +38,6 @@ fileprivate let typesNeedsTranslation = [
         return nil
     }
 #endif
-
-public enum CollectionChange<CollectionType> {
-    
-    case initial(CollectionType)
-    
-    case update(CollectionType, deletions: [Int], insertions: [Int], modifications: [Int])
-    
-    case error(Swift.Error)
-    
-}
 
 internal class RealmCache<T: Persistable>: Cache<T>, CacheType where T: NSObject {
     
@@ -1013,3 +1005,5 @@ internal class _QueryCache: Object {
     }
     
 }
+
+#endif

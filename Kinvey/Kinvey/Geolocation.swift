@@ -7,7 +7,9 @@
 //
 
 import Foundation
+#if canImport(RealmSwift)
 import RealmSwift
+#endif
 import CoreLocation
 import MapKit
 

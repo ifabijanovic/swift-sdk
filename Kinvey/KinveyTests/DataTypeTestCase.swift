@@ -21,6 +21,7 @@ import Foundation
 
 class DataTypeTestCase: StoreTestCase {
     
+    #if !SWIFT_PACKAGE
     func testSave() {
         signUp()
         
@@ -124,6 +125,7 @@ class DataTypeTestCase: StoreTestCase {
             expectationFind = nil
         }
     }
+    #endif
     
     func testDate() {
         signUp()
@@ -260,6 +262,7 @@ class DataTypeTestCase: StoreTestCase {
         XCTAssertEqual(transform.transformToJSON(Date(timeIntervalSince1970: 1479114355.787)), "2016-11-14T09:05:55.787Z")
     }
     
+    #if !SWIFT_PACKAGE
     func testPropertyMapping() {
         let propertyMapping = Book.propertyMapping()
         var entityId = false,
@@ -325,6 +328,7 @@ class DataTypeTestCase: StoreTestCase {
         XCTAssertTrue(editionsRating)
         XCTAssertTrue(editionsAvailable)
     }
+    #endif
     
 }
 
@@ -465,6 +469,7 @@ class DataType: Entity {
         fullName2DefaultValueNotOptionalTransformed <- ("fullName2DefaultValueNotOptionalTransformed", map["fullName2DefaultValueNotOptionalTransformed"], FullName2TransformType())
     }
     
+    #if canImport(RealmSwift)
     override class func ignoredProperties() -> [String] {
         return [
             "objectValue",
@@ -476,6 +481,7 @@ class DataType: Entity {
             "fullName2DefaultValueNotOptionalTransformed"
         ]
     }
+    #endif
     
 }
 
